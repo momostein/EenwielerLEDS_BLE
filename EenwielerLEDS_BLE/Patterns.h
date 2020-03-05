@@ -26,7 +26,7 @@ namespace patterns {
 
     };
 
-    class Parts : Pattern 
+    class Parts : public Pattern 
     {    
     public:
 

@@ -1,7 +1,6 @@
 /*
-    Based on Neil Kolban example for IDF: https://github.com/nkolban/esp32-snippets/blob/master/cpp_utils/tests/BLE%20Tests/SampleServer.cpp
-    Ported to Arduino ESP32 by Evandro Copercini
-    updates by chegewara
+    Control a WS2813 ledstrip from bluetooth
+    By Brecht and Wannes
 */
 
 #include <BLEDevice.h>
@@ -11,84 +10,153 @@
 
 #include "Patterns.h"
 
-// How many leds in your strip?
-#define NUM_LEDS 23
+/*  ----------------------
+        BLE UUIDS
+    ----------------------  */
 
-// For led chips like Neopixels, which have a data line, ground, and power, you just
-// need to define DATA_PIN.  For led chipsets that are SPI based (four wires - data, clock,
-// ground, and power), like the LPD8806, define both DATA_PIN and CLOCK_PIN
-#define DATA_PIN 12
-
-// See the following for generating UUIDs:
+// See the following for generating UUIDs :
 // https://www.uuidgenerator.net/
 
-#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
-#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
-#define COL_PRIM_UUID       "71c19398-3f77-46db-ac13-6b652978e868"
+#define SERVICE_UUID        "78f04453-8357-41f5-981e-6eec701224ea"
 
+#define PATTERN_UUID        "6781b711-4a50-4e20-8a39-d8b7bc3d14a8"
+#define BRIGHTNESS_UUID     "6cd7aa8c-c080-4195-ad5d-49babaffa170"
+
+#define COL_PRIM_UUID       "71c19398-3f77-46db-ac13-6b652978e868"
+#define COL_SEC_UUID        "adec8b74-7e24-4d05-83e7-e7a3d4e592d3"
+
+/*  ----------------------
+        LED OPTIONS
+    ----------------------  */
+
+// How many leds in your strip?
+#define NUM_LEDS 23
+#define DATA_PIN 12
+
+#define NUM_PATTERNS 4
+#define NUM_COLORS   2
 
 // Define the array of leds
 CRGB leds[NUM_LEDS];
 
 // Color palette
-CRGB colors[2] = {
+CRGB colors[NUM_COLORS] = {
     CRGB(0,     0,      255),
-    CRGB(0,     0,    0   )
+    CRGB(0,     255,    0)
+};
+
+String color_names[NUM_COLORS] = {
+    "primary",
+    "secondary"
+};
+
+// Current pattern
+uint8_t pattern = 1;
+
+// Patterns
+patterns::Pattern* pattern_array[NUM_PATTERNS] = {
+    new patterns::Solid(leds, NUM_LEDS, colors),
+    new patterns::Parts(leds, NUM_LEDS, colors, 2, 2, 50, -1),
+    new patterns::Parts(leds, NUM_LEDS, colors, 2, 4, 40, -1),
+    new patterns::Rainbow(leds, NUM_LEDS, 10, 255 / NUM_LEDS),
+};
+
+// Pattern names
+String pattern_names[NUM_PATTERNS]{
+    "Solid",
+    "Halves",
+    "Quarters",
+    "Rainbow"
 };
 
 int counter = 0;
 
-patterns::Parts parts(leds, NUM_LEDS, colors, 2, 4, 50, -1);
-patterns::Pride pride(leds, NUM_LEDS);
-patterns::Rainbow rainbow(leds, NUM_LEDS, 10, 255/NUM_LEDS);
-patterns::Solid solid(leds, NUM_LEDS, colors);
+/*  ----------------------
+        Callbacks
+    ----------------------  */
 
-class MyCallbackHandler : public BLEServerCallbacks {
+class ServerCallback : public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
-        Serial.print("CONNETED BIACH\t");
+        Serial.print("A device connected, counter:\t");
         Serial.println(counter++);
     }
 
     void onDisconnect(BLEServer* pServer) {
-        Serial.print("DISCONNECTED BIACH\t");
+        Serial.print("A device disconnected, counter:\t");
         Serial.println(counter++);
     }
 };
 
-class MyCallbacks : public BLECharacteristicCallbacks {
-    void onWrite(BLECharacteristic* pCharacteristic) {
+class PatternCallback : public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic* pChar) {
+        Serial.println("*********");
+        Serial.print("Pattern changed: ");
 
-        if (pCharacteristic->getUUID().toString() == COL_PRIM_UUID) {
-            Serial.println("*********");
-            Serial.print("New color: ");
-            for (int i = 0; i < 3; i++) {
-                Serial.print(pCharacteristic->getData()[i]);
+        pattern = pChar->getData()[0];
+        Serial.println(pattern_names[pattern]);
 
+        Serial.println();
+        Serial.println("*********");
+    }
 
-                Serial.print('\t');
-            }
-            Serial.println();
-            Serial.println("*********");
-
-            colors[0] = CRGB(pCharacteristic->getData()[0], pCharacteristic->getData()[1], pCharacteristic->getData()[2]);
-
-        }
-        else {
-
-            std::string value = pCharacteristic->getValue();
-
-            if (value.length() > 0) {
-                Serial.println("*********");
-                Serial.print("New value: ");
-                for (int i = 0; i < value.length(); i++)
-                    Serial.print(value[i]);
-
-                Serial.println();
-                Serial.println("*********");
-            }
-        }
+    void onRead(BLECharacteristic* pChar) {
+        uint8_t data[] = {pattern};
+        pChar->setValue(data, 1);
     }
 };
+
+class ColorCallback : public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic* pChar) {
+        Serial.println("*********");
+        Serial.print(color_names[color]);
+        Serial.print(" color changed:");
+
+        colors[color] = CRGB(pChar->getData()[0], pChar->getData()[1], pChar->getData()[2]);
+
+        Serial.print("\tR"); Serial.print(pChar->getData()[0]);
+        Serial.print("\tR"); Serial.print(pChar->getData()[1]);
+        Serial.println("\tR"); Serial.print(pChar->getData()[2]);
+
+        Serial.println();
+        Serial.println("*********");
+    }
+
+    void onRead(BLECharacteristic* pChar) {
+        uint8_t color_data[] = { colors[color].r, colors[color].g, colors[color].b };
+        pChar->setValue(color_data, 3);
+    }
+    
+public:
+    ColorCallback(CRGB* colors, int color) : colors(colors), color(color) {}
+
+private:
+    CRGB* colors;
+    int color;
+};
+
+class BrightnessCallback : public BLECharacteristicCallbacks {
+    void onWrite(BLECharacteristic* pChar) {
+        Serial.println("*********");
+        Serial.print("Brightness changed: ");
+
+        uint8_t brightness = pChar->getData()[0];
+        FastLED.setBrightness(brightness);
+
+        Serial.println(brightness);
+
+        Serial.println();
+        Serial.println("*********");
+    }
+
+    void onRead(BLECharacteristic* pChar) {
+        uint8_t data[] = { FastLED.getBrightness() };
+        pChar->setValue(data, 1);
+    }
+};
+
+/*  ----------------------
+        Setup
+    ----------------------  */
 
 void setup() {
     Serial.begin(115200);
@@ -101,8 +169,8 @@ void setup() {
     Serial.println("Black");
     for (int i = 0; i < NUM_LEDS; i++) {
         leds[i] = CRGB(0, 0, 0);
-
     }
+
     FastLED.show();
 
     Serial.println("Starting BLE work!");
@@ -110,27 +178,48 @@ void setup() {
     BLEDevice::init("Eenwieler LED");
     BLEServer* pServer = BLEDevice::createServer();
 
-    pServer->setCallbacks(new MyCallbackHandler());
+    pServer->setCallbacks(new ServerCallback());
 
     BLEService* pService = pServer->createService(SERVICE_UUID);
-    BLECharacteristic* pCharacteristic = pService->createCharacteristic(
-        CHARACTERISTIC_UUID,
+    
+    /*  ----------------------
+            Characteristics
+        ----------------------  */
+
+    // Pattern Characteristic
+    BLECharacteristic* pPattern = pService->createCharacteristic(
+        PATTERN_UUID,
         BLECharacteristic::PROPERTY_READ |
         BLECharacteristic::PROPERTY_WRITE
     );
 
+    pPattern->setCallbacks(new PatternCallback);
+
+    // Brightness Characteristic
+    BLECharacteristic* pBrightness = pService->createCharacteristic(
+        BRIGHTNESS_UUID,
+        BLECharacteristic::PROPERTY_READ |
+        BLECharacteristic::PROPERTY_WRITE
+    );
+
+    pBrightness->setCallbacks(new BrightnessCallback); 
+
+    // Color Characteristics
     BLECharacteristic* pColPrim = pService->createCharacteristic(
         COL_PRIM_UUID,
         BLECharacteristic::PROPERTY_READ |
         BLECharacteristic::PROPERTY_WRITE
     );
 
-    uint8_t white[3] = { 255, 255, 255 };
-    pColPrim->setValue(white, 3);
-    pColPrim->setCallbacks(new MyCallbacks());
+    BLECharacteristic* pColSec = pService->createCharacteristic(
+        COL_SEC_UUID,
+        BLECharacteristic::PROPERTY_READ |
+        BLECharacteristic::PROPERTY_WRITE
+    );
+        
+    pColPrim->setCallbacks(new ColorCallback(colors, 0));
+    pColSec->setCallbacks(new ColorCallback(colors, 1));
 
-    pCharacteristic->setValue("Hello World says Neil");
-    pCharacteristic->setCallbacks(new MyCallbacks());
 
     pService->start();
     // BLEAdvertising *pAdvertising = pServer->getAdvertising();  // this still is working for backward compatibility
@@ -143,9 +232,13 @@ void setup() {
     Serial.println("Characteristic defined! Now you can read it in your phone!");
 }
 
+/*  ----------------------
+        Loop
+    ----------------------  */
+
 void loop() {
 
-    parts.calc();
+    pattern_array[pattern]->calc();
 
     FastLED.show();
 }
