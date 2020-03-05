@@ -4,6 +4,9 @@
 
 #include "Patterns.h"
 
+#define MAX_DELAY 1500.0f
+#define MIN_DELAY 20.0f
+
 namespace patterns {
     inline void Pride::calc() {
         static uint16_t sPseudotime = 0;
@@ -46,12 +49,18 @@ namespace patterns {
     }
 
     inline void Parts::calc() {
-        if (millis() - lastT >= rotDelay && rotDelay >= 0) {
-            rot = (rot + rotAmount) % num_leds;
-
-            if (rot < 0) {
-                rot = rot + num_leds;
+        if (millis() - lastT >= *rotDelay && *rotDelay >= 0) {
+            if (*direction) {
+                rot++;
             }
+            else {
+                rot--;
+                if (rot < 0) {
+                    rot = num_leds-1;
+                }
+            }
+            
+            rot = rot % num_leds;
 
             lastT = millis();
         }
@@ -65,8 +74,13 @@ namespace patterns {
 
     void Rainbow::calc()
     {   
-        if (millis() - lastT >= hueDelay && hueDelay >= 0) {
-            hue++;
+        if (millis() - lastT >= (*hueDelay)/5 && *hueDelay >= 0) {
+            if (*direction) {
+                hue++;
+            }
+            else {
+                hue--;
+            }
 
             lastT = millis();
         }
@@ -77,6 +91,15 @@ namespace patterns {
     void Solid::calc()
     {
         fill_solid(leds, num_leds, colors[0]);
+    }
+
+    int delayFromSpeed(uint8_t speed) {
+        if (speed != 0) {
+            return (1.0f / (float)speed - 1.0f / 255.0f) * (MAX_DELAY - MIN_DELAY) / (1.0f - 1.0f / 255.0f) + MIN_DELAY;
+        }
+        else {
+            return -1;
+        }
     }
 }
 

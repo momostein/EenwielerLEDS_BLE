@@ -30,19 +30,18 @@ namespace patterns {
     {    
     public:
 
-        Parts(CRGB* leds, int num_leds, CRGB* colors, uint8_t num_colors, uint8_t num_parts, int rotDelay, int8_t rotAmount = 1) :
-            Pattern(leds, num_leds), colors(colors), num_colors(num_colors), num_parts(num_parts), rotDelay(rotDelay), rotAmount(rotAmount) {}
+        Parts(CRGB* leds, int num_leds, CRGB* colors, uint8_t num_colors, uint8_t num_parts, int* rotDelay, bool* direction) :
+            Pattern(leds, num_leds), colors(colors), num_colors(num_colors), num_parts(num_parts), rotDelay(rotDelay), direction(direction) {}
 
         void calc();
 
-        int8_t rotAmount;
-        uint8_t num_parts;
-        unsigned int rotDelay;
-
     private:
-        // Requires 2 colors
+        uint8_t num_parts;
         uint8_t num_colors;
         CRGB* colors;       
+
+        int* rotDelay;
+        bool* direction;
 
         int rot;
         int lastT;
@@ -58,15 +57,17 @@ namespace patterns {
     class Rainbow : public Pattern
     {
     public:
-        Rainbow(CRGB* leds, unsigned int num_leds, int hueDelay, uint8_t deltahue = 7) : 
-            Pattern(leds, num_leds), hueDelay(hueDelay), deltahue(deltahue) {}
+        Rainbow(CRGB* leds, unsigned int num_leds, int* hueDelay, bool* direction, uint8_t deltahue = 7) :
+            Pattern(leds, num_leds), hueDelay(hueDelay), direction(direction), deltahue(deltahue) {}
 
         void calc();
 
-        uint8_t deltahue;
-        int hueDelay;
-
     private:
+        uint8_t deltahue;
+        
+        int* hueDelay;
+        bool* direction;
+
         uint8_t hue;
         int lastT;
     };
@@ -82,9 +83,7 @@ namespace patterns {
         CRGB* colors;
     };
 
+    int delayFromSpeed(uint8_t speed);
 }
-
-
-
 #endif
 
