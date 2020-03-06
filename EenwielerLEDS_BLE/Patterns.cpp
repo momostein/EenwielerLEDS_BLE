@@ -5,7 +5,7 @@
 #include "Patterns.h"
 
 #define MAX_DELAY 1500.0f
-#define MIN_DELAY 20.0f
+#define MIN_DELAY 15.0f
 
 namespace patterns {
     inline void Pride::calc() {
