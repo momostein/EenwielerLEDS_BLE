@@ -14,6 +14,8 @@
         BLE UUIDS
     ----------------------  */
 
+#define DEVICE_NAME "Eenwieler van Brecht"
+
     // See the following for generating UUIDs :
     // https://www.uuidgenerator.net/
 
@@ -221,7 +223,7 @@ void setup() {
 
     Serial.println("Starting BLE work!");
 
-    BLEDevice::init("Eenwieler LED");
+    BLEDevice::init(DEVICE_NAME);
     BLEServer* pServer = BLEDevice::createServer();
 
     pServer->setCallbacks(new ServerCallback());
