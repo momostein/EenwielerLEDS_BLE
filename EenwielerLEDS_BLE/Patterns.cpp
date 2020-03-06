@@ -93,6 +93,30 @@ namespace patterns {
         fill_solid(leds, num_leds, colors[0]);
     }
 
+    void Marquee::calc()
+    {
+        if (millis() - lastT >= (*rotDelay) / 5 && *rotDelay >= 0) {
+
+            rot++;
+
+            if (rot >= num_leds) {
+                rot = 0;
+                color = (color + 1) % num_colors;
+            }
+
+            lastT = millis();
+        };
+
+        for (int i = 0; i <= rot; i++) {
+            if (*direction) {
+                leds[i] = colors[color];
+            }
+            else {
+                leds[num_leds - 1 - i] = colors[color];
+            }
+        }
+    }
+
     int delayFromSpeed(uint8_t speed) {
         if (speed != 0) {
             return (1.0f / (float)speed - 1.0f / 255.0f) * (MAX_DELAY - MIN_DELAY) / (1.0f - 1.0f / 255.0f) + MIN_DELAY;

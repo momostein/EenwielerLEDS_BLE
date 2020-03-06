@@ -83,6 +83,28 @@ namespace patterns {
         CRGB* colors;
     };
 
+    class Marquee : public Pattern
+    {
+    public:
+        Marquee(CRGB* leds, unsigned int num_leds, CRGB* colors, uint8_t num_colors, int* rotDelay, bool*direction):
+            Pattern(leds, num_leds), colors(colors), num_colors(num_colors), rotDelay(rotDelay), direction(direction) {}
+
+        void calc();
+
+    private:
+        uint8_t num_parts;
+        uint8_t num_colors;
+        CRGB* colors;
+
+        int* rotDelay;
+        bool* direction;
+
+        int rot = 0;
+        int color = 0;
+
+        int lastT = 0;
+    };
+
     int delayFromSpeed(uint8_t speed);
 }
 #endif

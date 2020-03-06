@@ -35,7 +35,7 @@
 #define NUM_LEDS 23
 #define DATA_PIN 12
 
-#define NUM_PATTERNS 6
+#define NUM_PATTERNS 7
 #define NUM_COLORS   3
 
 // Define the array of leds
@@ -75,6 +75,7 @@ patterns::Pattern* pattern_array[NUM_PATTERNS] = {
     new patterns::Parts(leds, NUM_LEDS, colors, 2, 2, &rotDelay, &direction),
     new patterns::Parts(leds, NUM_LEDS, colors, 2, 4, &rotDelay, &direction),
     new patterns::Parts(leds, NUM_LEDS, colors, 3, 3, &rotDelay, &direction),
+    new patterns::Marquee(leds, NUM_LEDS, colors, 3, &rotDelay, &direction),
     new patterns::Rainbow(leds, NUM_LEDS, &rotDelay, &direction, 255 / NUM_LEDS),
     new patterns::Pride(leds, NUM_LEDS)
 };
@@ -85,6 +86,7 @@ const String pattern_names[NUM_PATTERNS]{
     "Halves",
     "Quarters",
     "Triples",
+    "Marquee",
     "Rainbow",
     "Pride"
 };
@@ -112,7 +114,7 @@ class PatternCallback : public BLECharacteristicCallbacks {
         Serial.println("*********");
         Serial.print("Pattern changed: ");
 
-        pattern = pChar->getData()[0];
+        pattern = pChar->getData()[0] % NUM_PATTERNS;
         Serial.println(pattern_names[pattern]);
 
         Serial.println();
@@ -287,4 +289,8 @@ void loop() {
     pattern_array[pattern]->calc();
 
     FastLED.show();
+}
+
+void eventEffect(CRGB color) {
+
 }
