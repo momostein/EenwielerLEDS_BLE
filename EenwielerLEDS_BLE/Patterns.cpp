@@ -95,7 +95,7 @@ namespace patterns {
 
     void Marquee::calc()
     {
-        if (millis() - lastT >= (*rotDelay) / 5 && *rotDelay >= 0) {
+        if (millis() - lastT >= (*rotDelay) && *rotDelay >= 0) {
 
             rot++;
 
