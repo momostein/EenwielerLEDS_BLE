@@ -69,7 +69,7 @@ int rotDelay = patterns::delayFromSpeed(speed);
 bool direction = false;
 
 // Current pattern
-uint8_t pattern = 1;
+uint8_t pattern = 5;
 
 // Patterns
 patterns::Pattern* pattern_array[NUM_PATTERNS] = {
@@ -138,8 +138,8 @@ class ColorCallback : public BLECharacteristicCallbacks {
         colors[color] = CRGB(pChar->getData()[0], pChar->getData()[1], pChar->getData()[2]);
 
         Serial.print("\tR"); Serial.print(pChar->getData()[0]);
-        Serial.print("\tR"); Serial.print(pChar->getData()[1]);
-        Serial.println("\tR"); Serial.print(pChar->getData()[2]);
+        Serial.print("\tG"); Serial.print(pChar->getData()[1]);
+        Serial.println("\tB"); Serial.print(pChar->getData()[2]);
 
         Serial.println();
         Serial.println("*********");
